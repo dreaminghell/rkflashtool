@@ -1,0 +1,49 @@
+#!/bin/bash
+DDRINIT="$1"
+USBPLUG="$2"
+LOADER="$3"
+PARANUM="$#"
+PROGRAM=${0##*/}
+LOCAL_PATH=${0%/*}
+
+function usage()
+{
+	echo "usage:"
+        echo "	rkflash ddrinit usbplug loader           "
+
+}
+
+if [ $PARANUM != 3 ] ; then
+        echo "parameter number error"
+        usage
+        exit -1
+fi
+
+if [ ! -f $DDRINIT ];then
+	echo "$DDRINIT not exist!"
+	usage
+	exit -1
+fi
+
+if [ ! -f $USBPLUG ];then
+	echo "$USBPLUG not exist!"
+	usage
+	exit -1
+fi
+
+if [ ! -f $LOADER ];then
+	echo "$LOADER not exist!"
+	usage
+	exit -1
+fi
+
+echo "rc4:ddrinit"
+cat $DDRINIT | openssl rc4 -K 7c4e0304550509072d2c7b38170d1711 | sudo $LOCAL_PATH/rkflashtool l
+echo "rc4:usbplug"
+cat $USBPLUG | openssl rc4 -K 7c4e0304550509072d2c7b38170d1711 | sudo $LOCAL_PATH/rkflashtool L
+LOADER_SIZE=$(wc -c $LOADER  | awk '{print int($1/512 + 1)}')
+echo "loader size:" $LOADER_SIZE
+sudo $LOCAL_PATH/rkflashtool w 0 $LOADER_SIZE <$LOADER
+
+
+
