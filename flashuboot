@@ -1,0 +1,6 @@
+#!/bin/sh
+
+LOCALPATH=$(pwd)
+ROOTDIR=$(cd $(dirname $(dirname $0)); pwd)
+sudo ${ROOTDIR}/rkflashtool/rkflash ${ROOTDIR}/rkbin/rk30/RK3036_DDR3_400M_V1.06.bin ${ROOTDIR}/rkbin/rk30/rk303xusbplug.bin ${ROOTDIR}/image/kylin-rk3036-uboot.bin
+
