@@ -1,0 +1,27 @@
+#!/bin/sh
+
+LOCALPATH=$(pwd)
+ROOTDIR=$(cd $(dirname $(dirname $0)); pwd)
+
+
+echo "Waiting for rockchip device..."
+while ! sudo lsusb -d 2207: ; do sleep .5; done
+echo "Flashing U-boot for ${BOARD} board!"
+${ROOTDIR}/rkflashtool/flashuboot
+echo "Done!"
+sleep 2
+echo "Rebooting ${BOARD} board!"
+sudo ${ROOTDIR}/rkflashtool/rkflashtool b
+sleep 10
+echo "Done!"
+echo "Waiting for rockchip device..."
+while ! sudo lsusb -d 2207: ; do sleep .5; done
+echo "Flashing kernel for ${BOARD} board!"
+sudo fastboot -i 0x2207 flash boot_a ${ROOTDIR}/image/kernel.uimg
+echo "Done!"
+sleep 1
+echo "Flashing Ubuntu rootfs for ${BOARD} board!"
+sudo fastboot -i 0x2207 flash system_a ${ROOTDIR}/image/ubuntu.img
+echo "Done!"
+echo "Rebooting ${BOARD} board!"
+sudo fastboot -i 0x2207 reboot
