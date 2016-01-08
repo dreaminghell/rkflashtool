@@ -2,11 +2,7 @@
 PARANUM="$#"
 PROGRAM=${0##*/}
 LOCAL_PATH=${0%/*}
-if [ "${LOCAL_PATH}" = "." ];then
-ROOTDIR=$(dirname $(pwd))
-else
-ROOTDIR=$(cd $(dirname $(dirname $0)); pwd)
-fi
+ROOTDIR=$(dirname $(dirname $(readlink -f $0)))
 echo rootdir: $ROOTDIR
 BOARD=$1
 if [ $# != 1 ] ; then 
@@ -54,7 +50,7 @@ cat $USBPLUG | openssl rc4 -K 7c4e0304550509072d2c7b38170d1711 | sudo $ROOTDIR/r
 sleep 2
 LOADER_SIZE=$(wc -c $LOADER  | awk '{print int($1/512 + 1)}')
 echo loader: $LOADER, size: $LOADER_SIZE
-sudo $ROOTDIR/rkflashtool/rkflashtool w 0 $LOADER_SIZE <$LOADER
+sudo $ROOTDIR/rkflashtool/rkflashtool w 64 $LOADER_SIZE <$LOADER
 
 
 
