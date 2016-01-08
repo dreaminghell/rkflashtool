@@ -1,0 +1,60 @@
+#!/bin/bash
+PARANUM="$#"
+PROGRAM=${0##*/}
+LOCAL_PATH=${0%/*}
+if [ "${LOCAL_PATH}" = "." ];then
+ROOTDIR=$(dirname $(pwd))
+else
+ROOTDIR=$(cd $(dirname $(dirname $0)); pwd)
+fi
+echo rootdir: $ROOTDIR
+BOARD=$1
+if [ $# != 1 ] ; then 
+BOARD=kylin
+fi
+LOADER=${ROOTDIR}/image/${BOARD}-uboot.bin
+DDRINIT=""
+USBPLUG=""
+
+
+case ${BOARD} in
+	"kylin")
+	DDRINIT=${ROOTDIR}/rkbin/rk30/RK3036_DDR3_400M_V1.06.bin
+	USBPLUG=${ROOTDIR}/rkbin/rk30/rk303xusbplug.bin
+	;;
+	"firefly")
+		DDRINIT=${ROOTDIR}/rkbin/rk32/32_LPDDR2_200MHz_LPDDR3_200MHz_DDR3_200MHz_20150318.bin
+		USBPLUG=${ROOTDIR}/rkbin/rk32/rk32xxusbplug.bin
+	;;
+	"rk3036evb")
+		DDRINIT=${ROOTDIR}/rkbin/rk30/RK3036_DDR3_400M_V1.06.bin
+		USBPLUG=${ROOTDIR}/rkbin/rk30/rk303xusbplug.bin
+	;;
+	*)
+	echo "board not support in U-boot"
+	usage
+	exit -1
+       ;;
+esac
+
+
+function usage()
+{
+	echo "usage:"
+        echo "	rkflashloader board "
+
+}
+
+
+echo rc4 ddrinit $DDRINIT
+cat $DDRINIT | openssl rc4 -K 7c4e0304550509072d2c7b38170d1711 | sudo $ROOTDIR/rkflashtool/rkflashtool l
+sleep 1
+echo rc4:usbplug $USBPLUG
+cat $USBPLUG | openssl rc4 -K 7c4e0304550509072d2c7b38170d1711 | sudo $ROOTDIR/rkflashtool/rkflashtool L
+sleep 2
+LOADER_SIZE=$(wc -c $LOADER  | awk '{print int($1/512 + 1)}')
+echo loader: $LOADER, size: $LOADER_SIZE
+sudo $ROOTDIR/rkflashtool/rkflashtool w 0 $LOADER_SIZE <$LOADER
+
+
+
