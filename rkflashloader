@@ -11,6 +11,10 @@ fi
 LOADER=${ROOTDIR}/image/${BOARD}-uboot.bin
 DDRINIT=""
 USBPLUG=""
+MINILOADER=""
+MINILOADERTMP=${ROOTDIR}/image/miniloader_tmp.bin
+MINILOADERIMG=${ROOTDIR}/image/miniloader.img
+TRUST=""
 
 
 case ${BOARD} in
@@ -21,6 +25,12 @@ case ${BOARD} in
 	"firefly")
 		DDRINIT=${ROOTDIR}/rkbin/rk32/32_LPDDR2_200MHz_LPDDR3_200MHz_DDR3_200MHz_20150318.bin
 		USBPLUG=${ROOTDIR}/rkbin/rk32/rk32xxusbplug.bin
+	;;
+	"rk3399evb")
+		DDRINIT=${ROOTDIR}/rkbin/rk33/RK3399_DDR*.bin
+		USBPLUG=${ROOTDIR}/rkbin/rk33/rk3399usbplug.bin
+		MINILOADER=${ROOTDIR}/rkbin/rk33/rk3399miniloaderall_v1.04.bin
+		TRUST=${ROOTDIR}/image/trust.img
 	;;
 	"rk3036evb")
 		DDRINIT=${ROOTDIR}/rkbin/rk30/RK3036_DDR3_400M_V1.06.bin
@@ -47,10 +57,26 @@ cat $DDRINIT | openssl rc4 -K 7c4e0304550509072d2c7b38170d1711 | sudo $ROOTDIR/r
 sleep 1
 echo rc4:usbplug $USBPLUG
 cat $USBPLUG | openssl rc4 -K 7c4e0304550509072d2c7b38170d1711 | sudo $ROOTDIR/rkflashtool/rkflashtool L
-sleep 2
-LOADER_SIZE=$(wc -c $LOADER  | awk '{print int($1/512 + 1)}')
-echo loader: $LOADER, size: $LOADER_SIZE
-sudo $ROOTDIR/rkflashtool/rkflashtool w 64 $LOADER_SIZE <$LOADER
-
-
-
+#sleep 2
+case ${BOARD} in
+	"rk3399evb")
+	dd if=$MINILOADER of=$MINILOADERTMP bs=4 skip=1
+	$ROOTDIR/u-boot/tools/mkimage -n rk33xx -T rksd -d $MINILOADERTMP $MINILOADERIMG
+	LOADER_SIZE=$(wc -c $MINILOADER  | awk '{print int(($1+511)/512)}')
+	echo miniloader: $MINILOADERIMG, size: $LOADER_SIZE
+	sudo $ROOTDIR/rkflashtool/rkflashtool w 64 $LOADER_SIZE <$MINILOADERIMG
+	LOADER_SIZE=$(wc -c $LOADER  | awk '{print int(($1+511)/512)}')
+	echo uboot: $LOADER, size: $LOADER_SIZE
+	sudo $ROOTDIR/rkflashtool/rkflashtool w 0x2000 $LOADER_SIZE <$LOADER
+	LOADER_SIZE=$(wc -c $TRUST  | awk '{print int(($1+511)/512)}')
+	echo trust: $TRUST, size: $LOADER_SIZE
+	sudo $ROOTDIR/rkflashtool/rkflashtool w 0x4000 0x2001 <$TRUST
+#	sudo $ROOTDIR/rkflashtool/rkflashtool w 0x4000 $LOADER_SIZE <$TRUST
+	sudo $ROOTDIR/rkflashtool/rkflashtool b
+	;;
+	*)
+		LOADER_SIZE=$(wc -c $LOADER  | awk '{print int(($1+511)/512)}')
+	echo loader: $LOADER, size: $LOADER_SIZE
+	sudo $ROOTDIR/rkflashtool/rkflashtool w 64 $LOADER_SIZE <$LOADER
+	;;
+esac
